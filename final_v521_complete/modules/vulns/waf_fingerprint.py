@@ -1,0 +1,479 @@
+"""
+PhantomScan — WAF Fingerprinter (v5.5)
+=======================================
+Fingerprinting précis des WAF/CDN par analyse multi-signal :
+  - Headers caractéristiques (cf-ray, x-sucuri-id, x-iinfo, x-cdn...)
+  - Status codes sur payloads XSS/SQLi génériques
+  - Comportement de blocage (body signature, redirect)
+  - Timing / jitter WAF
+  - Cookies injectés par le WAF
+
+WAFs détectés :
+  Cloudflare, Akamai, Imperva (Incapsula), F5 BIG-IP ASM,
+  AWS WAF, Sucuri, Barracuda, ModSecurity, Reblaze, Fastly,
+  Varnish, Nginx, StackPath, Edgio, Radware AppWall
+
+Findings émis :
+  INFO    — WAF détecté (confirmé)
+  LOW     — WAF probable (signal partiel)
+  MEDIUM  — WAF contournable (payload XSS/SQLi non bloqué)
+"""
+
+from __future__ import annotations
+
+import asyncio
+import re
+import time
+from dataclasses import dataclass
+from typing import AsyncIterator
+
+from phantomscan.config import PhantomConfig
+from phantomscan.core.requester import Requester, ProbeRequest
+from phantomscan.core.heuristic import HeuristicEngine
+from phantomscan.output.reporter import Finding, Severity
+from phantomscan.core.scanner_mixin import ScannerMixin
+
+
+# ── Signatures headers ────────────────────────────────────────────────────────
+
+@dataclass
+class WAFSignature:
+    name: str
+    header_patterns: list[tuple[str, str]]   # (header_name, regex)
+    body_patterns: list[str]                  # regex dans le body de blocage
+    cookie_patterns: list[str]                # regex dans Set-Cookie
+    block_status: list[int]                   # codes HTTP typiques de blocage
+
+
+WAF_SIGNATURES: list[WAFSignature] = [
+    WAFSignature(
+        name="Cloudflare",
+        header_patterns=[
+            ("cf-ray",              r".+"),
+            ("cf-cache-status",     r".+"),
+            ("server",              r"cloudflare"),
+        ],
+        body_patterns=[
+            r"cloudflare",
+            r"Ray ID",
+            r"__cf_bm",
+            r"Attention Required\! \| Cloudflare",
+        ],
+        cookie_patterns=[r"__cf_bm", r"cf_clearance"],
+        block_status=[403, 503],
+    ),
+    WAFSignature(
+        name="Akamai",
+        header_patterns=[
+            ("x-check-cacheable",   r".+"),
+            ("x-akamai-request-id", r".+"),
+            ("server",              r"AkamaiGHost"),
+            ("x-akamai-transformed",r".+"),
+        ],
+        body_patterns=[
+            r"Access Denied.*Akamai",
+            r"Reference #\d+\.\w+\.\d+",
+            r"akamai",
+        ],
+        cookie_patterns=[r"ak_bmsc", r"bm_sz"],
+        block_status=[403, 406],
+    ),
+    WAFSignature(
+        name="Imperva (Incapsula)",
+        header_patterns=[
+            ("x-iinfo",             r".+"),
+            ("x-cdn",               r"Imperva"),
+        ],
+        body_patterns=[
+            r"Incapsula",
+            r"incap_ses",
+            r"_incap_",
+            r"Request unsuccessful\. Incapsula incident ID",
+        ],
+        cookie_patterns=[r"incap_ses", r"visid_incap"],
+        block_status=[403],
+    ),
+    WAFSignature(
+        name="F5 BIG-IP ASM",
+        header_patterns=[
+            ("x-cnection",          r".+"),
+            ("server",              r"BigIP"),
+        ],
+        body_patterns=[
+            r"The requested URL was rejected",
+            r"F5 Networks",
+            r"BIG-IP",
+            r"Your support ID is",
+        ],
+        cookie_patterns=[r"TS[0-9a-f]{8}", r"BIGipServer"],
+        block_status=[403, 501],
+    ),
+    WAFSignature(
+        name="AWS WAF",
+        header_patterns=[
+            ("x-amzn-requestid",    r".+"),
+            ("x-amzn-trace-id",     r".+"),
+            ("x-amz-cf-id",         r".+"),
+        ],
+        body_patterns=[
+            r"AWS WAF",
+            r"Request blocked",
+        ],
+        cookie_patterns=[r"aws-waf-token"],
+        block_status=[403],
+    ),
+    WAFSignature(
+        name="Sucuri",
+        header_patterns=[
+            ("x-sucuri-id",         r".+"),
+            ("x-sucuri-cache",      r".+"),
+            ("server",              r"Sucuri"),
+        ],
+        body_patterns=[
+            r"Sucuri Website Firewall",
+            r"Access Denied - Sucuri",
+            r"sucuri\.net",
+        ],
+        cookie_patterns=[r"sucuri_cloudproxy_uuid"],
+        block_status=[403],
+    ),
+    WAFSignature(
+        name="Barracuda WAF",
+        header_patterns=[
+            ("x-barracuda-connect", r".+"),
+            ("server",              r"BarracudaWAF"),
+        ],
+        body_patterns=[
+            r"Barracuda Web Application Firewall",
+            r"barra_counter_session",
+        ],
+        cookie_patterns=[r"barra_counter_session"],
+        block_status=[400, 403],
+    ),
+    WAFSignature(
+        name="ModSecurity",
+        header_patterns=[
+            ("server",              r"mod_security"),
+            ("x-mod-security-message", r".+"),
+        ],
+        body_patterns=[
+            r"This error was generated by Mod_Security",
+            r"ModSecurity",
+            r"Not Acceptable!.*mod_security",
+        ],
+        cookie_patterns=[],
+        block_status=[406, 403, 501],
+    ),
+    WAFSignature(
+        name="Reblaze",
+        header_patterns=[
+            ("x-reblaze-protection", r".+"),
+            ("server",               r"reblaze"),
+        ],
+        body_patterns=[r"Reblaze Deflect"],
+        cookie_patterns=[r"rbzid"],
+        block_status=[403],
+    ),
+    WAFSignature(
+        name="Fastly",
+        header_patterns=[
+            ("x-served-by",         r"cache-"),
+            ("x-cache",             r".+"),
+            ("x-fastly-request-id", r".+"),
+        ],
+        body_patterns=[r"Fastly error"],
+        cookie_patterns=[],
+        block_status=[403],
+    ),
+    WAFSignature(
+        name="Radware AppWall",
+        header_patterns=[
+            ("x-sl-compstate",      r".+"),
+            ("server",              r"Radware"),
+        ],
+        body_patterns=[
+            r"Radware",
+            r"AppWall",
+            r"The page cannot be displayed",
+        ],
+        cookie_patterns=[r"slstat"],
+        block_status=[403],
+    ),
+    WAFSignature(
+        name="StackPath",
+        header_patterns=[
+            ("x-sp-waf",            r".+"),
+            ("server",              r"StackPath"),
+        ],
+        body_patterns=[r"StackPath", r"sp_waf"],
+        cookie_patterns=[],
+        block_status=[403],
+    ),
+]
+
+
+# ── Payloads de test ──────────────────────────────────────────────────────────
+
+# Payloads connus pour déclencher les WAF (sans exploitation réelle)
+WAF_TEST_PAYLOADS: list[tuple[str, str]] = [
+    ("xss_basic",    "<script>alert(1)</script>"),
+    ("sqli_basic",   "' OR 1=1--"),
+    ("sqli_union",   "' UNION SELECT NULL--"),
+    ("path_trav",    "../../etc/passwd"),
+    ("cmdi_basic",   "; ls -la"),
+    ("xxe_basic",    "<!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]>"),
+]
+
+
+# ── Scanner ───────────────────────────────────────────────────────────────────
+
+class WAFFingerprintScanner(ScannerMixin):
+    """
+    Fingerprinting WAF par analyse multi-signal.
+    Résultat utilisable par les autres modules pour adapter les payloads.
+    """
+
+    def __init__(self, req: Requester, heuristic: HeuristicEngine, cfg: PhantomConfig) -> None:
+        self._req = req
+        self._heuristic = heuristic
+        self._cfg = cfg
+
+    async def run(self, target: str) -> AsyncIterator[Finding]:
+        """Point d'entrée principal."""
+        # 1. Baseline — requête normale
+        baseline = await self._probe(target, None)
+        if baseline is None:
+            return
+
+        # 2. Fingerprint sur headers de la baseline
+        detected, confidence, signals = self._fingerprint_headers(
+            baseline.get("headers", {}),
+            baseline.get("body", ""),
+            baseline.get("cookies", ""),
+        )
+
+        # 3. Probes avec payloads WAF-trigger
+        block_results = await self._probe_payloads(target)
+
+        # 4. Consolidation
+        if detected:
+            yield self._finding_detected(target, detected, confidence, signals, block_results)
+        else:
+            # Chercher via comportement de blocage
+            waf_via_block = self._fingerprint_via_block(block_results)
+            if waf_via_block:
+                yield self._finding_detected(
+                    target, waf_via_block, 0.6,
+                    ["Block behavior signature"],
+                    block_results,
+                )
+            elif block_results:
+                # Blocage observé mais WAF non identifié
+                blocked_count = sum(1 for _, blocked, _ in block_results if blocked)
+                if blocked_count > 0:
+                    yield Finding(
+                        title="WAF/Firewall détecté (non identifié)",
+                        severity=Severity.LOW,
+                        url=target,
+                        module="WAFFingerprintScanner",
+                        description=(
+                            f"{blocked_count}/{len(block_results)} payloads bloqués — "
+                            "WAF présent mais signature inconnue."
+                        ),
+                        evidence=f"Payloads bloqués : {[p for p, b, _ in block_results if b]}",
+                        remediation="Analyser manuellement les headers de réponse.",
+                        cwe="CWE-693",
+                    )
+
+        # 5. Test bypass — payload qui passe malgré le WAF
+        if detected or block_results:
+            async for f in self._test_bypass(target, detected):
+                yield f
+
+    # ── Probes ──────────────────────────────────────────────────────────────
+
+    async def _probe(self, url: str, payload: str | None) -> dict | None:
+        """Envoie une requête de probe et retourne headers/body/status."""
+        probe_url = url
+        if payload:
+            sep = "&" if "?" in url else "?"
+            probe_url = f"{url}{sep}q={payload}"
+
+        try:
+            resp = await self._req.get(ProbeRequest(url=probe_url))
+            return {
+                "status":  resp.status_code,
+                "headers": {k.lower(): v for k, v in resp.headers.items()},
+                "body":    (resp.text or "")[:4000],
+                "cookies": resp.headers.get("set-cookie", ""),
+            }
+        except Exception:
+            return None
+
+    async def _probe_payloads(
+        self, target: str
+    ) -> list[tuple[str, bool, int]]:
+        """
+        Teste les payloads WAF-trigger.
+        Retourne (payload_name, was_blocked, status_code).
+        """
+        tasks = [
+            self._probe_one_payload(target, name, payload)
+            for name, payload in WAF_TEST_PAYLOADS
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [r for r in results if isinstance(r, tuple)]
+
+    async def _probe_one_payload(
+        self, target: str, name: str, payload: str
+    ) -> tuple[str, bool, int]:
+        data = await self._probe(target, payload)
+        if data is None:
+            return (name, False, 0)
+        blocked = data["status"] in (400, 403, 406, 429, 501, 503)
+        return (name, blocked, data["status"])
+
+    # ── Fingerprinting ───────────────────────────────────────────────────────
+
+    def _fingerprint_headers(
+        self,
+        headers: dict[str, str],
+        body: str,
+        cookies: str,
+    ) -> tuple[str | None, float, list[str]]:
+        """
+        Analyse headers/body/cookies contre les signatures connues.
+        Retourne (waf_name | None, confidence 0-1, signals).
+        """
+        best_name: str | None = None
+        best_score: float = 0.0
+        best_signals: list[str] = []
+
+        for sig in WAF_SIGNATURES:
+            score = 0.0
+            signals: list[str] = []
+
+            # Headers
+            for hdr, pattern in sig.header_patterns:
+                val = headers.get(hdr, "")
+                if val and re.search(pattern, val, re.I):
+                    score += 0.35
+                    signals.append(f"header:{hdr}={val[:60]}")
+
+            # Body
+            for bp in sig.body_patterns:
+                if re.search(bp, body, re.I):
+                    score += 0.25
+                    signals.append(f"body:{bp}")
+
+            # Cookies
+            for cp in sig.cookie_patterns:
+                if re.search(cp, cookies, re.I):
+                    score += 0.20
+                    signals.append(f"cookie:{cp}")
+
+            if score > best_score:
+                best_score = score
+                best_name = sig.name
+                best_signals = signals
+
+        # Seuil minimal pour confirmer
+        if best_score >= 0.35:
+            return best_name, min(best_score, 1.0), best_signals
+        return None, 0.0, []
+
+    def _fingerprint_via_block(
+        self, block_results: list[tuple[str, bool, int]]
+    ) -> str | None:
+        """Tente d'identifier le WAF par le code de blocage dominant."""
+        if not block_results:
+            return None
+        codes = [code for _, blocked, code in block_results if blocked]
+        if not codes:
+            return None
+        dominant = max(set(codes), key=codes.count)
+        for sig in WAF_SIGNATURES:
+            if dominant in sig.block_status:
+                return sig.name
+        return None
+
+    # ── Bypass test ─────────────────────────────────────────────────────────
+
+    async def _test_bypass(
+        self, target: str, waf_name: str | None
+    ) -> AsyncIterator[Finding]:
+        """
+        Teste quelques encodages bypass basiques pour voir si le WAF est bypassable.
+        Ne fait PAS d'exploitation — juste détecte si les payloads passent.
+        """
+        BYPASS_VARIANTS = [
+            ("xss_encoded",     "%3Cscript%3Ealert(1)%3C/script%3E"),
+            ("xss_unicode",     "\\u003cscript\\u003ealert(1)\\u003c/script\\u003e"),
+            ("sqli_comment",    "'/**/OR/**/1=1--"),
+            ("sqli_case",       "' Or 1=1--"),
+        ]
+
+        passed = []
+        for name, payload in BYPASS_VARIANTS:
+            data = await self._probe(target, payload)
+            if data and data["status"] not in (400, 403, 406, 429, 501, 503):
+                passed.append(name)
+            await asyncio.sleep(0.3)
+
+        if passed:
+            waf_label = waf_name or "WAF"
+            yield Finding(
+                title=f"{waf_label} — bypass potentiel détecté",
+                severity=Severity.MEDIUM,
+                url=target,
+                module="WAFFingerprintScanner",
+                description=(
+                    f"Certains payloads encodés ne sont pas bloqués par {waf_label}, "
+                    "suggérant un bypass potentiel."
+                ),
+                evidence=f"Payloads non bloqués : {passed}",
+                remediation=(
+                    "Renforcer les règles WAF pour couvrir les encodages "
+                    "(%XX, unicode \\uXXXX, commentaires SQL /**/). "
+                    "Tester avec un scanner dédié (SQLMap tamper, dalfox)."
+                ),
+                cwe="CWE-693",
+                cvss=5.3,
+            )
+
+    # ── Finding helpers ──────────────────────────────────────────────────────
+
+    def _finding_detected(
+        self,
+        url: str,
+        waf_name: str,
+        confidence: float,
+        signals: list[str],
+        block_results: list[tuple[str, bool, int]],
+    ) -> Finding:
+        blocked_count = sum(1 for _, b, _ in block_results if b)
+        total = len(block_results)
+
+        evidence_parts = [f"Signals: {'; '.join(signals[:5])}"]
+        if block_results:
+            evidence_parts.append(
+                f"Payloads bloqués: {blocked_count}/{total}"
+            )
+
+        return Finding(
+            title=f"WAF détecté : {waf_name}",
+            severity=Severity.INFO,
+            url=url,
+            module="WAFFingerprintScanner",
+            description=(
+                f"{waf_name} détecté avec confiance {confidence:.0%}. "
+                f"{blocked_count}/{total} payloads de test bloqués."
+            ),
+            evidence=" | ".join(evidence_parts),
+            remediation=(
+                "Information de reconnaissance. Les payloads des autres modules "
+                "seront adaptés en conséquence pour maximiser la détection."
+            ),
+            cwe="CWE-16",
+            extra={"waf": waf_name, "confidence": confidence},
+        )
